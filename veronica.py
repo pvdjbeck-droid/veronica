@@ -64,18 +64,22 @@ def speak(text):
     engine.runAndWait()
 
 # Função para ouvir o comando do usuário
-def listen():
+def listen(prompt="Aguardando comando...", timeout=None, phrase_time_limit=None):
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
-        print("Aguardando comando...")
+        print(prompt)
         recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
-    
+        try:
+            audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
+        except sr.WaitTimeoutError:
+            print("Nenhum áudio detectado dentro do tempo limite.")
+            return ""
+
     try:
         command = recognizer.recognize_google(audio, language='pt-BR')
         print(f"Você disse: {command}")
         return command.lower()
-    except sr.UnknownValueError:
+      except sr.UnknownValueError:  
         print("Não consegui entender, por favor, tente novamente.")
         return ""
     except sr.RequestError:
@@ -83,23 +87,23 @@ def listen():
         return ""
 
 # Função para processar os comandos de voz
-def process_command(command):
-    if "verônica" in command or "vê" in command:  # Incluindo variações como "Vê"
-        command = command.replace("verônica", "").replace("vê", "").strip()  # Remove a palavra-chave
+def process_command(command):␊
+    if "verônica" in command or "vê" in command:  # Incluindo variações como "Vê"␊
+        command = command.replace("verônica", "").replace("vê", "").strip()  # Remove a palavra-chave␊
+␊
+        # Consultar o banco de dados para encontrar uma intenção correspondente␊
+        response = check_intent(command)␊
 
-        # Consultar o banco de dados para encontrar uma intenção correspondente
-        response = check_intent(command)
-        
-        if response:
-            # Log da interação
-            log_interaction(command, response)
-            # Falar a resposta
-            speak(response)
-        else:
-            # Se a Verônica não entender, ela pedirá feedback
-            speak("Desculpe, não entendi o comando. Você pode me explicar o que deseja fazer?")
-            save_feedback(command)  # Registra o feedback
-            return  # Volta para o loop de escuta
+        if response:␊
+            # Log da interação␊
+            log_interaction(command, response)␊
+            # Falar a resposta␊
+            speak(response)␊
+        else:␊
+            # Se a Verônica não entender, ela pedirá feedback␊
+            speak("Desculpe, não entendi o comando. Você pode me explicar o que deseja fazer?")␊
+            threading.Thread(target=save_feedback, args=(command,), daemon=True).start()
+            return  # Volta para o loop de escuta␊
 
 # Função para verificar a intenção no banco de dados e retornar a resposta
 def check_intent(command):
@@ -121,7 +125,10 @@ def check_intent(command):
 
 # Função para salvar o feedback de quando a Verônica não entender o comando
 def save_feedback(command):
-    feedback = input(f"Você pode me explicar o comando '{command}'? ")
+    feedback_prompt = f"Você pode me explicar o comando '{command}'?"
+    feedback = listen(prompt=feedback_prompt, timeout=5, phrase_time_limit=10)
+    if not feedback:
+        feedback = "feedback não fornecido"
     log_feedback(command, feedback)
 
 # Função para rodar o assistente em segundo plano
@@ -143,3 +150,4 @@ def start_assistant():
 
 if __name__ == "__main__":
     start_assistant()
+
