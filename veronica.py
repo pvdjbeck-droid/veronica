@@ -79,13 +79,12 @@ def listen(prompt="Aguardando comando...", timeout=None, phrase_time_limit=None)
         command = recognizer.recognize_google(audio, language='pt-BR')
         print(f"Você disse: {command}")
         return command.lower()
-      except sr.UnknownValueError:  
+    except sr.UnknownValueError:
         print("Não consegui entender, por favor, tente novamente.")
         return ""
     except sr.RequestError:
         print("Erro ao tentar se conectar ao serviço de reconhecimento de voz.")
         return ""
-
 # Função para processar os comandos de voz
 def process_command(command):␊
     if "verônica" in command or "vê" in command:  # Incluindo variações como "Vê"␊
@@ -150,4 +149,5 @@ def start_assistant():
 
 if __name__ == "__main__":
     start_assistant()
+
 
